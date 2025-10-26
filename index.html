@@ -78,11 +78,22 @@
 
         const nextRace = upcomingRaces[0];
 
+        // Format the race date nicely: 2:00 PM, 10/26/25
+        const raceDate = new Date(nextRace.race_date);
+        const formattedDate = raceDate.toLocaleString("en-US", {
+          month: "numeric",
+          day: "numeric",
+          year: "2-digit",
+          hour: "numeric",
+          minute: "2-digit",
+          hour12: true
+        });
+
         infoDiv.innerHTML = `
           <p><strong>Next Race:</strong> ${nextRace.race_name}</p>
           <p><strong>Track:</strong> ${nextRace.track_name}</p>
           <p><strong>Series:</strong> ${nextRace.series_id}</p>
-          <p><strong>Race Date:</strong> ${nextRace.race_date}</p>
+          <p><strong>Race Date:</strong> ${formattedDate}</p>
           <p><strong>Laps:</strong> ${nextRace.scheduled_laps}</p>
           <p><strong>Stage 1:</strong> ${nextRace.stage_1_laps || "N/A"}</p>
           <p><strong>Stage 2:</strong> ${nextRace.stage_2_laps || "N/A"}</p>
