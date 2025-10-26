@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Next NASCAR Race</title>
+  <title>Next NASCAR Races</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -20,11 +20,16 @@
       border-radius: 10px;
       padding: 20px 30px;
       box-shadow: 0 4px 10px rgba(255,255,255,0.1);
-      max-width: 500px;
+      max-width: 600px;
       text-align: left;
+      margin-bottom: 20px;
     }
     h1 {
       color: #f9d342;
+    }
+    h2 {
+      color: #f0a500;
+      margin-top: 15px;
     }
     p {
       line-height: 1.6;
@@ -39,7 +44,7 @@
 </head>
 <body>
   <div class="card">
-    <h1>🏁 Next NASCAR Race</h1>
+    <h1>🏁 Next NASCAR Races</h1>
     <div id="race-info">Loading...</div>
   </div>
   <footer>Data from NASCAR.com JSON feeds</footer>
@@ -48,7 +53,14 @@
     const proxy = "https://corsproxy.io/?";
     const raceListUrl = proxy + encodeURIComponent("https://cf.nascar.com/cacher/2025/race_list_basic.json");
 
-    async function loadNextRace() {
+    // Map series keys to human-readable names
+    const seriesMap = {
+      "series_1": "NASCAR Cup Series",
+      "series_2": "NASCAR Xfinity Series",
+      "series_3": "NASCAR Craftsman Truck Series"
+    };
+
+    async function loadNextRaces() {
       const infoDiv = document.getElementById("race-info");
       try {
         const res = await fetch(raceListUrl);
@@ -56,49 +68,45 @@
 
         const raceListRaw = await res.json();
 
-        // Flatten all series arrays into one array
-        const allRaces = Object.values(raceListRaw).flat();
+        let htmlContent = "";
 
-        if (!allRaces || allRaces.length === 0) {
-          infoDiv.innerHTML = "No upcoming races found.";
-          console.error("Race list is empty or invalid", raceListRaw);
-          return;
+        for (const [key, seriesName] of Object.entries(seriesMap)) {
+          const races = raceListRaw[key] || [];
+          const now = new Date();
+          const upcomingRaces = races
+            .map(r => ({ ...r, dateObj: new Date(r.race_date) }))
+            .filter(r => r.dateObj > now)
+            .sort((a, b) => a.dateObj - b.dateObj);
+
+          if (upcomingRaces.length === 0) {
+            htmlContent += `<h2>${seriesName}</h2><p>No upcoming race found.</p>`;
+            continue;
+          }
+
+          const nextRace = upcomingRaces[0];
+          const raceDate = new Date(nextRace.race_date);
+          const formattedDate = raceDate.toLocaleString("en-US", {
+            month: "numeric",
+            day: "numeric",
+            year: "2-digit",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true
+          });
+
+          htmlContent += `
+            <h2>${seriesName}</h2>
+            <p><strong>Next Race:</strong> ${nextRace.race_name}</p>
+            <p><strong>Track:</strong> ${nextRace.track_name}</p>
+            <p><strong>Race Date:</strong> ${formattedDate}</p>
+            <p><strong>Laps:</strong> ${nextRace.scheduled_laps}</p>
+            <p><strong>Stage 1:</strong> ${nextRace.stage_1_laps || "N/A"}</p>
+            <p><strong>Stage 2:</strong> ${nextRace.stage_2_laps || "N/A"}</p>
+            <p><strong>Stage 3:</strong> ${nextRace.stage_3_laps || "N/A"}</p>
+          `;
         }
 
-        const now = new Date();
-        const upcomingRaces = allRaces
-          .map(r => ({ ...r, dateObj: new Date(r.race_date) }))
-          .filter(r => r.dateObj > now)
-          .sort((a, b) => a.dateObj - b.dateObj);
-
-        if (upcomingRaces.length === 0) {
-          infoDiv.innerHTML = "No upcoming races found.";
-          return;
-        }
-
-        const nextRace = upcomingRaces[0];
-
-        // Format the race date nicely: 2:00 PM, 10/26/25
-        const raceDate = new Date(nextRace.race_date);
-        const formattedDate = raceDate.toLocaleString("en-US", {
-          month: "numeric",
-          day: "numeric",
-          year: "2-digit",
-          hour: "numeric",
-          minute: "2-digit",
-          hour12: true
-        });
-
-        infoDiv.innerHTML = `
-          <p><strong>Next Race:</strong> ${nextRace.race_name}</p>
-          <p><strong>Track:</strong> ${nextRace.track_name}</p>
-          <p><strong>Series:</strong> ${nextRace.series_id}</p>
-          <p><strong>Race Date:</strong> ${formattedDate}</p>
-          <p><strong>Laps:</strong> ${nextRace.scheduled_laps}</p>
-          <p><strong>Stage 1:</strong> ${nextRace.stage_1_laps || "N/A"}</p>
-          <p><strong>Stage 2:</strong> ${nextRace.stage_2_laps || "N/A"}</p>
-          <p><strong>Stage 3:</strong> ${nextRace.stage_3_laps || "N/A"}</p>
-        `;
+        infoDiv.innerHTML = htmlContent;
 
       } catch (err) {
         infoDiv.innerHTML = "Error loading race data (check console).";
@@ -106,7 +114,7 @@
       }
     }
 
-    loadNextRace();
+    loadNextRaces();
   </script>
 </body>
 </html>
