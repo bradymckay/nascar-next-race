@@ -15,7 +15,7 @@
     table {
       border-collapse: collapse;
       width: 100%;
-      max-width: 700px;
+      max-width: 800px;
       margin-top: 10px;
     }
     th, td {
@@ -48,14 +48,20 @@
           return;
         }
 
-        // Build table
+        // Build table with Season Points and Points Earned This Race
         let html = `<table>
-          <tr><th>Pos</th><th>Driver</th><th>Points</th></tr>`;
+          <tr>
+            <th>Pos</th>
+            <th>Driver</th>
+            <th>Season Points</th>
+            <th>Points This Race</th>
+          </tr>`;
         data.forEach((driver, index) => {
           html += `<tr>
             <td>${index + 1}</td>
             <td>${driver.first_name} ${driver.last_name || ''}</td>
-            <td>${driver.total_points || 0}</td>
+            <td>${driver.points || 0}</td>
+            <td>${driver.points_earned_this_race || 0}</td>
           </tr>`;
         });
         html += "</table>";
