@@ -54,17 +54,19 @@
         const res = await fetch(raceListUrl);
         if (!res.ok) throw new Error("Network response not ok");
 
-        const raceList = await res.json();
+        const raceListRaw = await res.json();
 
-        // The JSON is an array of race objects
-        if (!Array.isArray(raceList) || raceList.length === 0) {
+        // Flatten all series arrays into one array
+        const allRaces = Object.values(raceListRaw).flat();
+
+        if (!allRaces || allRaces.length === 0) {
           infoDiv.innerHTML = "No upcoming races found.";
-          console.error("Race list is empty or invalid", raceList);
+          console.error("Race list is empty or invalid", raceListRaw);
           return;
         }
 
         const now = new Date();
-        const upcomingRaces = raceList
+        const upcomingRaces = allRaces
           .map(r => ({ ...r, dateObj: new Date(r.race_date) }))
           .filter(r => r.dateObj > now)
           .sort((a, b) => a.dateObj - b.dateObj);
