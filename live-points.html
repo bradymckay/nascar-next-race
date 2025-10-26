@@ -4,27 +4,60 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cup Series Live Points</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #0b0b0b;
+      color: #fff;
+      padding: 20px;
+    }
+    h1 { color: #f9d342; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 700px;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 6px 8px;
+      text-align: left;
+    }
+    th { background-color: #222; }
+    p { margin-top: 10px; }
+  </style>
 </head>
 <body>
-  <h1>Next Cup Series Live Points</h1>
-  <div id="live-points">Loading...</div>
+  <h1>🏁 Cup Series Live Points</h1>
+  <div id="live-points">Loading live points...</div>
 
   <script>
     const livePointsUrl = "https://cf.nascar.com/live/feeds/series_1/5584/live_points.json";
+    const container = document.getElementById("live-points");
 
     async function loadLivePoints() {
-      const container = document.getElementById("live-points");
       try {
         const res = await fetch(livePointsUrl);
         if (!res.ok) throw new Error(`Failed to fetch live points: ${res.status}`);
         const data = await res.json();
 
-        if (!data || !data.points || !data.points.length) {
-          container.innerHTML = "No points data available yet.";
+        console.log("Live points JSON:", data);
+
+        if (!data || !data.points) {
+          container.innerHTML = "No points data available.";
           return;
         }
 
-        let html = `<table border="1" cellpadding="5">
+        if (data.points.length === 0) {
+          container.innerHTML = "Race has not started or live points are not yet posted.";
+          if (data.last_update) {
+            container.innerHTML += `<p>Last update: ${new Date(data.last_update).toLocaleTimeString()}</p>`;
+          }
+          return;
+        }
+
+        // Build the points table
+        let html = `<table>
           <tr><th>Pos</th><th>Driver</th><th>Points</th></tr>`;
         data.points.forEach(p => {
           html += `<tr>
@@ -34,18 +67,24 @@
           </tr>`;
         });
         html += "</table>";
+
+        if (data.last_update) {
+          html += `<p>Last update: ${new Date(data.last_update).toLocaleTimeString()}</p>`;
+        }
+
         container.innerHTML = html;
 
       } catch (err) {
-        container.innerHTML = "Error loading live points (check console).";
+        container.innerHTML = "Error loading live points. Check console for details.";
         console.error(err);
       }
     }
 
+    // Initial load
     loadLivePoints();
-    setInterval(loadLivePoints, 60000); // refresh every 60s
+
+    // Auto-refresh every 60 seconds
+    setInterval(loadLivePoints, 60000);
   </script>
 </body>
 </html>
-
-
