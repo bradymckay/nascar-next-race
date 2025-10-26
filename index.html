@@ -45,52 +45,48 @@
   <footer>Data from NASCAR.com JSON feeds</footer>
 
   <script>
-    const liveFeedUrl = "https://cf.nascar.com/live/feeds/live-feed.json";
-    const raceListUrl = "https://cf.nascar.com/cacher/2025/race_list_basic.json";
+  const proxy = "https://api.allorigins.win/raw?url=";
+  const liveFeedUrl = proxy + "https://cf.nascar.com/live/feeds/live-feed.json";
+  const raceListUrl = proxy + "https://cf.nascar.com/cacher/2025/race_list_basic.json";
 
-    async function loadNextRace() {
-      try {
-        const [liveRes, raceListRes] = await Promise.all([
-          fetch(liveFeedUrl),
-          fetch(raceListUrl)
-        ]);
+  async function loadNextRace() {
+    try {
+      const [liveRes, raceListRes] = await Promise.all([
+        fetch(liveFeedUrl),
+        fetch(raceListUrl)
+      ]);
 
-        const liveData = await liveRes.json();
-        const raceList = await raceListRes.json();
-        const now = new Date();
+      const liveData = await liveRes.json();
+      const raceList = await raceListRes.json();
+      const now = new Date();
 
-        const upcomingRaces = raceList.races
-          .map(r => ({
-            ...r,
-            dateObj: new Date(r.race_date)
-          }))
-          .filter(r => r.dateObj > now)
-          .sort((a, b) => a.dateObj - b.dateObj);
+      const upcomingRaces = raceList.races
+        .map(r => ({ ...r, dateObj: new Date(r.race_date) }))
+        .filter(r => r.dateObj > now)
+        .sort((a, b) => a.dateObj - b.dateObj);
 
-        if (upcomingRaces.length === 0) {
-          document.getElementById("race-info").innerHTML = "No upcoming races found.";
-          return;
-        }
-
-        const nextRace = upcomingRaces[0];
-
-        document.getElementById("race-info").innerHTML = `
-          <p><strong>Next Race:</strong> ${nextRace.race_name}</p>
-          <p><strong>Track:</strong> ${nextRace.track_name}</p>
-          <p><strong>Series:</strong> ${nextRace.series_id}</p>
-          <p><strong>Race Date:</strong> ${nextRace.race_date}</p>
-          <p><strong>Laps:</strong> ${nextRace.scheduled_laps}</p>
-          <p><strong>Stage 1:</strong> ${nextRace.stage_1_laps || "N/A"}</p>
-          <p><strong>Stage 2:</strong> ${nextRace.stage_2_laps || "N/A"}</p>
-          <p><strong>Stage 3:</strong> ${nextRace.stage_3_laps || "N/A"}</p>
-        `;
-      } catch (err) {
-        document.getElementById("race-info").innerHTML = "Error loading race data.";
-        console.error(err);
+      if (upcomingRaces.length === 0) {
+        document.getElementById("race-info").innerHTML = "No upcoming races found.";
+        return;
       }
-    }
 
-    loadNextRace();
-  </script>
-</body>
-</html>
+      const nextRace = upcomingRaces[0];
+
+      document.getElementById("race-info").innerHTML = `
+        <p><strong>Next Race:</strong> ${nextRace.race_name}</p>
+        <p><strong>Track:</strong> ${nextRace.track_name}</p>
+        <p><strong>Series:</strong> ${nextRace.series_id}</p>
+        <p><strong>Race Date:</strong> ${nextRace.race_date}</p>
+        <p><strong>Laps:</strong> ${nextRace.scheduled_laps}</p>
+        <p><strong>Stage 1:</strong> ${nextRace.stage_1_laps || "N/A"}</p>
+        <p><strong>Stage 2:</strong> ${nextRace.stage_2_laps || "N/A"}</p>
+        <p><strong>Stage 3:</strong> ${nextRace.stage_3_laps || "N/A"}</p>
+      `;
+    } catch (err) {
+      document.getElementById("race-info").innerHTML = "Error loading race data.";
+      console.error(err);
+    }
+  }
+
+  loadNextRace();
+</script>
