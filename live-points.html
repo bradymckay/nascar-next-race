@@ -2,166 +2,71 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Next NASCAR Live Points</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0b0b0b;
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      flex-direction: column;
-    }
-    .card {
-      background: #1a1a1a;
-      border-radius: 10px;
-      padding: 20px 30px;
-      box-shadow: 0 4px 10px rgba(255,255,255,0.1);
-      max-width: 700px;
-      text-align: left;
-      margin-bottom: 20px;
-    }
-    h1 {
-      color: #f9d342;
-    }
-    h2 {
-      color: #f0a500;
-      margin-top: 15px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    th, td {
-      border: 1px solid #444;
-      padding: 6px 8px;
-      text-align: left;
-    }
-    th {
-      background-color: #222;
-    }
-    footer {
-      margin-top: 20px;
-      color: #999;
-      font-size: 0.8rem;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cup Series Live Points</title>
 </head>
 <body>
-  <div class="card">
-    <h1>🏁 Next NASCAR Live Points</h1>
-    <div id="race-info">Loading...</div>
-  </div>
-  <footer>Data from NASCAR.com JSON feeds</footer>
+  <h1>Next Cup Series Live Points</h1>
+  <div id="live-points">Loading...</div>
 
   <script>
-    const proxy = "https://corsproxy.io/?";
+    const proxy = "https://corsproxy.io/?"; // Note: may fail with 403
     const raceListUrl = proxy + encodeURIComponent("https://cf.nascar.com/cacher/2025/race_list_basic.json");
 
-    const seriesMap = {
-      "series_1": "NASCAR Cup Series",
-      "series_2": "NASCAR Xfinity Series",
-      "series_3": "NASCAR Craftsman Truck Series"
-    };
-
-    async function loadLivePoints() {
-      const infoDiv = document.getElementById("race-info");
-      infoDiv.innerHTML = "Loading next race live points...";
+    async function loadCupLivePoints() {
+      const container = document.getElementById("live-points");
       try {
+        // 1️⃣ Get the next Cup Series race
         const res = await fetch(raceListUrl);
         if (!res.ok) throw new Error("Failed to fetch race list");
+        const raceList = await res.json();
+        const cupRaces = raceList.series_1 || [];
+        const now = new Date();
+        const nextRace = cupRaces
+          .map(r => ({ ...r, dateObj: new Date(r.race_date) }))
+          .filter(r => r.dateObj > now)
+          .sort((a,b) => a.dateObj - b.dateObj)[0];
 
-        const raceListRaw = await res.json();
-        let htmlContent = "";
-
-        for (const [key, seriesName] of Object.entries(seriesMap)) {
-          const races = raceListRaw[key] || [];
-          const now = new Date();
-          const upcomingRaces = races
-            .map(r => ({ ...r, dateObj: new Date(r.race_date) }))
-            .filter(r => r.dateObj > now)
-            .sort((a, b) => a.dateObj - b.dateObj);
-
-          if (upcomingRaces.length === 0) {
-            htmlContent += `<h2>${seriesName}</h2><p>No upcoming race found.</p>`;
-            continue;
-          }
-
-          const nextRace = upcomingRaces[0];
-          const raceDate = new Date(nextRace.race_date);
-          const formattedDate = raceDate.toLocaleString("en-US", {
-            month: "numeric",
-            day: "numeric",
-            year: "2-digit",
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true
-          });
-
-          htmlContent += `
-            <h2>${seriesName} - ${nextRace.race_name}</h2>
-            <p><strong>Track:</strong> ${nextRace.track_name}</p>
-            <p><strong>Race Date:</strong> ${formattedDate}</p>
-            <p><strong>Laps:</strong> ${nextRace.scheduled_laps}</p>
-            <div id="live-points-${key}">Loading live points...</div>
-          `;
-
-          // Fetch live points for this race
-          const livePointsUrl = proxy + encodeURIComponent(
-            `https://cf.nascar.com/live/feeds/${nextRace.series_id}/${nextRace.race_id}/live_points.json`
-          );
-
-          fetch(livePointsUrl)
-            .then(r => r.json())
-            .then(data => {
-              const container = document.getElementById(`live-points-${key}`);
-              if (!data || !data.points || !data.points.length) {
-                container.innerHTML = "No live points available.";
-                return;
-              }
-
-              let tableHTML = `
-                <table>
-                  <tr>
-                    <th>Position</th>
-                    <th>Driver</th>
-                    <th>Points</th>
-                  </tr>
-              `;
-
-              data.points.forEach(p => {
-                tableHTML += `
-                  <tr>
-                    <td>${p.position}</td>
-                    <td>${p.driver_name}</td>
-                    <td>${p.total_points}</td>
-                  </tr>
-                `;
-              });
-
-              tableHTML += "</table>";
-              container.innerHTML = tableHTML;
-            })
-            .catch(err => {
-              const container = document.getElementById(`live-points-${key}`);
-              container.innerHTML = "Error fetching live points.";
-              console.error("Live points fetch error:", err);
-            });
+        if (!nextRace) {
+          container.innerHTML = "No upcoming Cup Series race found.";
+          return;
         }
 
-        infoDiv.innerHTML = htmlContent;
+        const seriesId = nextRace.series_id;
+        const raceId = nextRace.race_id;
+
+        // 2️⃣ Attempt to fetch live points
+        const livePointsUrl = proxy + encodeURIComponent(`https://cf.nascar.com/live/feeds/${seriesId}/${raceId}/live_points.json`);
+        const liveRes = await fetch(livePointsUrl);
+        if (!liveRes.ok) throw new Error("Failed to fetch live points");
+        const liveData = await liveRes.json();
+
+        if (!liveData || !liveData.points || !liveData.points.length) {
+          container.innerHTML = "No live points available yet.";
+          return;
+        }
+
+        // 3️⃣ Display points
+        let html = `<table border="1" cellpadding="5">
+          <tr><th>Pos</th><th>Driver</th><th>Points</th></tr>`;
+        liveData.points.forEach(p => {
+          html += `<tr>
+            <td>${p.position}</td>
+            <td>${p.driver_name}</td>
+            <td>${p.total_points}</td>
+          </tr>`;
+        });
+        html += "</table>";
+        container.innerHTML = html;
 
       } catch (err) {
-        infoDiv.innerHTML = "Error loading data (check console).";
+        container.innerHTML = "Error fetching live points (likely CORS/403). Check console.";
         console.error(err);
       }
     }
 
-    loadLivePoints();
+    loadCupLivePoints();
   </script>
 </body>
 </html>
+
