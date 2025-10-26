@@ -43,34 +43,22 @@
 
         console.log("Live points JSON:", data);
 
-        if (!data || !data.points) {
-          container.innerHTML = "No points data available.";
-          return;
-        }
-
-        if (data.points.length === 0) {
+        if (!data || !Array.isArray(data) || data.length === 0) {
           container.innerHTML = "Race has not started or live points are not yet posted.";
-          if (data.last_update) {
-            container.innerHTML += `<p>Last update: ${new Date(data.last_update).toLocaleTimeString()}</p>`;
-          }
           return;
         }
 
-        // Build the points table
+        // Build table
         let html = `<table>
           <tr><th>Pos</th><th>Driver</th><th>Points</th></tr>`;
-        data.points.forEach(p => {
+        data.forEach((driver, index) => {
           html += `<tr>
-            <td>${p.position}</td>
-            <td>${p.driver_name}</td>
-            <td>${p.total_points}</td>
+            <td>${index + 1}</td>
+            <td>${driver.first_name} ${driver.last_name || ''}</td>
+            <td>${driver.total_points || 0}</td>
           </tr>`;
         });
         html += "</table>";
-
-        if (data.last_update) {
-          html += `<p>Last update: ${new Date(data.last_update).toLocaleTimeString()}</p>`;
-        }
 
         container.innerHTML = html;
 
