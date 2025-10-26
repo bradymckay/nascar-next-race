@@ -3,86 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cup Series Live / Last Points</title>
+  <title>Cup Series Live Points</title>
+  <style>
+    body { font-family: Arial; background: #0b0b0b; color: #fff; display:flex; justify-content:center; align-items:flex-start; flex-direction:column; padding:20px; }
+    h1 { color: #f9d342; }
+    table { border-collapse: collapse; width: 100%; max-width: 700px; margin-top: 10px; }
+    th, td { border: 1px solid #444; padding: 6px 8px; text-align: left; }
+    th { background-color: #222; }
+  </style>
 </head>
 <body>
-  <h1>Next Cup Series Live / Last Points</h1>
-  <div id="live-points">Loading...</div>
+  <h1>🏁 Cup Series Live Points</h1>
+  <div id="live-points">Loading live points...</div>
 
   <script>
-    const proxy = "https://corsproxy.io/?"; // May fail with 403
-    const raceListUrl = proxy + encodeURIComponent("https://cf.nascar.com/cacher/2025/race_list_basic.json");
+    const seriesId = "series_1";
+    const raceId = 5584; // next Cup Series race
+    const livePointsUrl = `https://cf.nascar.com/live/feeds/${seriesId}/${raceId}/live_points.json`;
 
-    async function fetchLivePoints(seriesId, raceId) {
-      const livePointsUrl = proxy + encodeURIComponent(`https://cf.nascar.com/live/feeds/${seriesId}/${raceId}/live_points.json`);
-      try {
-        const res = await fetch(livePointsUrl);
-        if (!res.ok) throw new Error("Failed to fetch live points");
-        const data = await res.json();
-        if (!data || !data.points || !data.points.length) throw new Error("No points data");
-        return data.points;
-      } catch (err) {
-        console.warn(`Live points fetch failed for race ${raceId}:`, err);
-        return null;
-      }
-    }
-
-    async function loadCupPoints() {
+    async function loadLivePoints() {
       const container = document.getElementById("live-points");
       try {
-        const res = await fetch(raceListUrl);
-        if (!res.ok) throw new Error("Failed to fetch race list");
-        const raceList = await res.json();
-        const cupRaces = raceList.series_1 || [];
-        const now = new Date();
+        const res = await fetch(livePointsUrl);
+        if (!res.ok) throw new Error(`Failed to fetch live points: ${res.status}`);
+        const data = await res.json();
 
-        const upcomingRaces = cupRaces
-          .map(r => ({ ...r, dateObj: new Date(r.race_date) }))
-          .filter(r => r.dateObj > now)
-          .sort((a,b) => a.dateObj - b.dateObj);
-
-        let raceToUse;
-        if (upcomingRaces.length > 0) {
-          raceToUse = upcomingRaces[0];
-        } else {
-          // If no upcoming races, fallback to last race
-          const pastRaces = cupRaces
-            .map(r => ({ ...r, dateObj: new Date(r.race_date) }))
-            .filter(r => r.dateObj <= now)
-            .sort((a,b) => b.dateObj - a.dateObj); // latest first
-          raceToUse = pastRaces[0];
-        }
-
-        if (!raceToUse) {
-          container.innerHTML = "No Cup Series races found.";
+        if (!data || !data.points || !data.points.length) {
+          container.innerHTML = "No points data available yet.";
           return;
         }
 
-        // Attempt live points for next race first
-        let points = await fetchLivePoints(raceToUse.series_id, raceToUse.race_id);
-
-        // If fetch fails, fallback to previous race
-        if (!points) {
-          const pastRaces = cupRaces
-            .map(r => ({ ...r, dateObj: new Date(r.race_date) }))
-            .filter(r => r.dateObj < raceToUse.dateObj)
-            .sort((a,b) => b.dateObj - a.dateObj); // latest first
-          if (pastRaces.length > 0) {
-            const prevRace = pastRaces[0];
-            points = await fetchLivePoints(prevRace.series_id, prevRace.race_id);
-            raceToUse = prevRace;
-          }
-        }
-
-        if (!points) {
-          container.innerHTML = "Unable to fetch live or previous points.";
-          return;
-        }
-
-        let html = `<h2>${raceToUse.race_name} (${raceToUse.track_name})</h2>`;
-        html += `<table border="1" cellpadding="5">
+        let html = `<table>
           <tr><th>Pos</th><th>Driver</th><th>Points</th></tr>`;
-        points.forEach(p => {
+        data.points.forEach(p => {
           html += `<tr>
             <td>${p.position}</td>
             <td>${p.driver_name}</td>
@@ -93,12 +46,15 @@
         container.innerHTML = html;
 
       } catch (err) {
-        container.innerHTML = "Error loading Cup Series points (check console).";
+        container.innerHTML = "Error loading live points (check console).";
         console.error(err);
       }
     }
 
-    loadCupPoints();
+    loadLivePoints();
+
+    // Optional: auto-refresh every 60 seconds
+    setInterval(loadLivePoints, 60000);
   </script>
 </body>
 </html>
