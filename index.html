@@ -45,34 +45,49 @@
   <footer>Data from NASCAR.com JSON feeds</footer>
 
   <script>
-  const proxy = "https://api.allorigins.win/raw?url=";
-  const liveFeedUrl = proxy + "https://cf.nascar.com/live/feeds/live-feed.json";
-  const raceListUrl = proxy + "https://cf.nascar.com/cacher/2025/race_list_basic.json";
+  const proxy = "https://corsproxy.io/?";
+  const liveFeedUrl = proxy + encodeURIComponent("https://cf.nascar.com/live/feeds/live-feed.json");
+  const raceListUrl = proxy + encodeURIComponent("https://cf.nascar.com/cacher/2025/race_list_basic.json");
 
   async function loadNextRace() {
+    const infoDiv = document.getElementById("race-info");
     try {
       const [liveRes, raceListRes] = await Promise.all([
         fetch(liveFeedUrl),
         fetch(raceListUrl)
       ]);
 
-      const liveData = await liveRes.json();
-      const raceList = await raceListRes.json();
-      const now = new Date();
+      if (!liveRes.ok || !raceListRes.ok) throw new Error("Network response not ok");
 
+      const liveText = await liveRes.text();
+      const raceListText = await raceListRes.text();
+
+      let raceList, liveData;
+      try {
+        liveData = JSON.parse(liveText);
+        raceList = JSON.parse(raceListText);
+      } catch {
+        console.error("Non-JSON response from NASCAR feed:\n", raceListText.slice(0, 500));
+        throw new Error("Invalid JSON received");
+      }
+
+      if (!raceList || !raceList.races) {
+        throw new Error("No 'races' array found in NASCAR data");
+      }
+
+      const now = new Date();
       const upcomingRaces = raceList.races
         .map(r => ({ ...r, dateObj: new Date(r.race_date) }))
         .filter(r => r.dateObj > now)
         .sort((a, b) => a.dateObj - b.dateObj);
 
-      if (upcomingRaces.length === 0) {
-        document.getElementById("race-info").innerHTML = "No upcoming races found.";
+      if (!upcomingRaces.length) {
+        infoDiv.innerHTML = "No upcoming races found.";
         return;
       }
 
       const nextRace = upcomingRaces[0];
-
-      document.getElementById("race-info").innerHTML = `
+      infoDiv.innerHTML = `
         <p><strong>Next Race:</strong> ${nextRace.race_name}</p>
         <p><strong>Track:</strong> ${nextRace.track_name}</p>
         <p><strong>Series:</strong> ${nextRace.series_id}</p>
@@ -83,8 +98,8 @@
         <p><strong>Stage 3:</strong> ${nextRace.stage_3_laps || "N/A"}</p>
       `;
     } catch (err) {
-      document.getElementById("race-info").innerHTML = "Error loading race data.";
-      console.error(err);
+      infoDiv.innerHTML = "Error loading race data (check console).";
+      console.error("Fetch error:", err);
     }
   }
 
