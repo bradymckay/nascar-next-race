@@ -4,22 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cup Series Live Points</title>
-  <style>
-    body { font-family: Arial; background: #0b0b0b; color: #fff; display:flex; justify-content:center; align-items:flex-start; flex-direction:column; padding:20px; }
-    h1 { color: #f9d342; }
-    table { border-collapse: collapse; width: 100%; max-width: 700px; margin-top: 10px; }
-    th, td { border: 1px solid #444; padding: 6px 8px; text-align: left; }
-    th { background-color: #222; }
-  </style>
 </head>
 <body>
-  <h1>🏁 Cup Series Live Points</h1>
-  <div id="live-points">Loading live points...</div>
+  <h1>Next Cup Series Live Points</h1>
+  <div id="live-points">Loading...</div>
 
   <script>
-    const seriesId = "series_1";
-    const raceId = 5584; // next Cup Series race
-    const livePointsUrl = `https://cf.nascar.com/live/feeds/${seriesId}/${raceId}/live_points.json`;
+    const livePointsUrl = "https://cf.nascar.com/live/feeds/series_1/5584/live_points.json";
 
     async function loadLivePoints() {
       const container = document.getElementById("live-points");
@@ -33,7 +24,7 @@
           return;
         }
 
-        let html = `<table>
+        let html = `<table border="1" cellpadding="5">
           <tr><th>Pos</th><th>Driver</th><th>Points</th></tr>`;
         data.points.forEach(p => {
           html += `<tr>
@@ -52,9 +43,9 @@
     }
 
     loadLivePoints();
-
-    // Optional: auto-refresh every 60 seconds
-    setInterval(loadLivePoints, 60000);
+    setInterval(loadLivePoints, 60000); // refresh every 60s
   </script>
 </body>
 </html>
+
+
